@@ -101,7 +101,9 @@ def main():
                 ya = anio_examen(tx)
                 if ya and ya != y: raise ValueError(f'el propio cuaderno dice que es del EIR {ya}')
                 q2, nopt = M.mejor_cuaderno(tx); esp = anunciadas(tx) or ESPERADAS(y)
-                if len(q2) < 0.9 * esp: raise ValueError(f'solo {len(q2)} preguntas de {esp}')
+                if len(q2) < 0.9 * esp:
+                    port = re.search(r'.{0,60}preguntas.{0,60}', tx[:3000].replace('\n', ' '))
+                    raise ValueError(f"solo {len(q2)} preguntas de {esp} ({nopt} opciones, última nº {max([q['n'] for q in q2] or [0])}); portada: «{port.group(0) if port else '—'}»; final: «{tx[-200:].replace(chr(10), ' / ')}»")
                 d.mkdir(parents=True, exist_ok=True); (d / 'cuaderno.pdf').write_bytes(b); (d / 'cuaderno.txt').write_text(tx, encoding='utf-8'); qs = q2
                 origen.append('cuaderno: ' + u); print(f'{y} cuaderno OK ({len(q2)} preg., {nopt} opciones) ← {u}'); break
             except Exception as ex: print(f'{y} cuaderno ✕ {u}: {ex}')
