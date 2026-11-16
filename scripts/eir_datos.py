@@ -23,7 +23,7 @@ def norm(s):
 
 
 # ── 1 · cuaderno ───────────────────────────────────────────────────────────────────────────────
-RUIDO = re.compile(r'^\s*(-\s*\d+\s*-|\d+\s*/\s*\d+|p[aá]gina\s+\d+.*|versi[oó]n\s*:?\s*\d+.*|eir\s*20\d\d.*|enfermer[ií]a\s*$|cuaderno de examen.*|ministerio de sanidad.*|pruebas selectivas.*)\s*$', re.I)
+RUIDO = re.compile(r'^\s*(-\s*\d+\s*-|\d+\s*/\s*\d+|p[aá]gina\s*:?(\s*\d+.*)?|\d+\s+de\s+\d+|\)\d+/\d+-+\d+-+\w+-+\(|\(-+\w+-+\d+-+\d+/\d+\(|versi[oó]n\s*:?\s*\d+.*|eir\s*20\d\d.*|enfermer[ií]a\s*$|cuaderno de examen.*|ministerio de sanidad.*|pruebas selectivas.*)\s*$', re.I)
 NUM = re.compile(r'^\s*(\d{1,3})\s*[.)]\s*(.*)$')
 
 
