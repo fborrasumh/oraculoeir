@@ -9,7 +9,7 @@ import json, re, sys, html, pathlib, urllib.request, urllib.parse, http.cookieja
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import eir_datos as M
 R = pathlib.Path(__file__).resolve().parent.parent; RAW = R / 'data' / 'raw'
-ESPERADAS = lambda y: 235 if y <= 2019 else 185 if y <= 2021 else 210   # incluidas las de reserva; si la portada lo dice, manda la portada (anunciadas)
+ESPERADAS = lambda y: 110 if y <= 2012 else 235 if y <= 2019 else 185 if y <= 2021 else 210   # incluidas las de reserva; si la portada lo dice, manda la portada (anunciadas)
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'}
 cj = http.cookiejar.CookieJar(); OP = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 
