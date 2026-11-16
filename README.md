@@ -28,8 +28,10 @@ Mientras no exista `data/eir.json`, la app funciona en **modo demostración**: r
 
 El flujo **Actions → «Datos EIR» → Run workflow** (`.github/workflows/datos-eir.yml`):
 
+Hay 18 exámenes, de 2009 a 2026: los de 2022 a 2026 vienen del portal oficial y los de 2009 a 2021, de copias de los PDF oficiales que guarda el Colegio de Enfermería de Salamanca (cada año apunta su origen en `data/raw/<año>/origen.txt`). El EIR ha cambiado de tamaño: 100 + 10 preguntas hasta 2012, luego 160, 180, 200 y 225 + 10, 175 + 10 en 2020-2021 y 200 + 10 desde 2022; la predicción trabaja con proporciones.
+
 1. `scripts/eir_fetch.py --api` abre el portal FSE con Chromium para obtener su token anónimo y pide a su API, convocatoria a convocatoria, el cuaderno de Enfermería (versión 0) y la hoja de respuestas definitiva. El código de la titulación Enfermería en la API se detecta solo: prueba varios y se queda con el que devuelve un cuaderno que dice «Enfermería». Si ninguno funciona, lanza el paso `sondear` y pásalo a mano con `--titulacion`.
-2. `scripts/eir_externos.py` completa años antiguos con las URL de `data/fuentes_externas.json` (vacío de momento).
+2. `scripts/eir_externos.py` completa los años 2009-2021 con las URL de `data/fuentes_externas.json`.
 3. `scripts/eir_datos.py` extrae preguntas y opciones, lee la respuesta oficial, clasifica cada pregunta y escribe `data/eir.json` y `data/informe.md`.
 
 **Revisa a mano al menos 20 preguntas por año contra el PDF antes de dar los datos por buenos.**
