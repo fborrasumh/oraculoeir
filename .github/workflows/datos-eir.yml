@@ -1,0 +1,65 @@
+# Trae los exámenes EIR oficiales al repositorio y regenera data/eir.json.
+# Lánzalo desde la pestaña «Actions» → «Datos EIR» → «Run workflow».
+name: Datos EIR
+on:
+  workflow_dispatch:
+    inputs:
+      paso:
+        description: 'todo | externos | procesar | clasificar | sondear | descubrir | descargar'
+        default: 'todo'
+        required: true
+permissions:
+  contents: write
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Dependencias
+        run: |
+          pip install playwright==1.47.0 pdfplumber==0.11.4
+          python -m playwright install --with-deps chromium
+      - name: Pruebas del extractor
+        run: python tests/test_datos.py
+      - name: Sondear la API del portal (diagnóstico)
+        if: inputs.paso == 'sondear'
+        run: python scripts/eir_fetch.py --sondear
+      - name: Descargar por la API del portal FSE
+        if: inputs.paso == 'todo'
+        run: python scripts/eir_fetch.py --api
+      - name: EIR antiguos (2007-2021) desde copias de los PDF oficiales
+        if: inputs.paso == 'todo' || inputs.paso == 'externos'
+        run: python scripts/eir_externos.py
+      - name: Descubrir enlaces en el portal FSE (método antiguo)
+        if: inputs.paso == 'descubrir'
+        run: python scripts/eir_fetch.py --descubrir
+      - name: Descargar cuadernos y plantillas definitivas
+        if: inputs.paso == 'descargar'
+        run: python scripts/eir_fetch.py --descargar
+      - name: Extraer preguntas y clasificar
+        if: inputs.paso != 'descubrir' && inputs.paso != 'sondear'
+        run: python scripts/eir_datos.py || true
+      - name: Clasificar por asignatura con IA (secreto OPENAI_API_KEY, modelo gpt-6-luna)
+        if: inputs.paso != 'descubrir' && inputs.paso != 'sondear'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODELO_IA: gpt-6-luna
+        run: python scripts/eir_clasifica_ia.py && python scripts/eir_datos.py
+      - name: Informe en el resumen de la ejecución
+        if: always()
+        run: cat data/informe.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "Sin informe todavía" >> "$GITHUB_STEP_SUMMARY"
+      - name: Guardar capturas del portal (para ajustar el descubrimiento)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: portal-debug, path: data/raw/_debug, if-no-files-found: ignore}
+      - name: Subir los datos al repositorio
+        run: |
+          git config user.name "oraculoeir-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data
+          git diff --cached --quiet || git commit -m "Datos EIR: exámenes oficiales y extracción ($(date -u +%F))"
+          git push

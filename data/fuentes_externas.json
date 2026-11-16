@@ -1,0 +1,3 @@
+{
+ "_nota": "Copias de terceros de cuadernos (versión 0) y plantillas definitivas oficiales del EIR para los años que el portal FSE ya no ofrece. Formato: {\"AAAA\": {\"cuaderno\": [url, …], \"plantilla\": [url, …]}}. Se prueban las URL en orden; el código comprueba que sea un PDF de Enfermería de ese año y que salgan las preguntas esperadas. Vacío de momento: solo se usan los exámenes del portal oficial."
+}
