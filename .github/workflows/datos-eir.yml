@@ -30,7 +30,7 @@ jobs:
       - name: Descargar por la API del portal FSE
         if: inputs.paso == 'todo'
         run: python scripts/eir_fetch.py --api
-      - name: EIR antiguos (2007-2021) desde copias de los PDF oficiales
+      - name: EIR antiguos desde copias de los PDF oficiales
         if: inputs.paso == 'todo' || inputs.paso == 'externos'
         run: python scripts/eir_externos.py
       - name: Descubrir enlaces en el portal FSE (método antiguo)

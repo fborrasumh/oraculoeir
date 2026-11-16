@@ -72,6 +72,8 @@ H = 'Preguntas de reserva ( 176 - 185 )  176 2 : pregunta 176, respuesta 2\n 10 
 r = M.parse_plantilla(H, 185, 4); check('plantilla web con «pregunta N, respuesta R»: el rango «176 - 185» no anula nada', r.get(176) == 2 and r.get(10) == 0 and r.get(11) == 1, str({k: r.get(k) for k in (10, 11, 176)}))
 G = 'V RC V RC\n1 5 53 3\n2 3 54 1\n106 158 5\n131 183 3 235 1\n'
 r = M.parse_plantilla(G, 260, 5); check('tabla del Ministerio con anulada como hueco («106 158 5»)', r.get(106) == 0 and r.get(158) == 5 and r.get(131) == 0 and r.get(183) == 3 and r.get(53) == 3, str({k: r.get(k) for k in (53, 106, 158, 131, 183, 235)}))
+q_sp = M.parse_cuaderno('1. Primera pregunta:\n1. a\n2. b\n3. c\n4. d\n2 La segunda viene sin punto:\n1. a\n2. b\n3. c\n4. d\n3. Tercera:\n1. a\n2. b\n3. c\n4. d\n', 4)
+check('errata: número de pregunta sin punto («165 La…»)', [q['n'] for q in q_sp] == [1, 2, 3] and q_sp[1]['enunciado'].startswith('La segunda'), str([q['n'] for q in q_sp]))
 import eir_fetch as F
 check('año del examen: convocatoria 2025-2026 → 2026', F.anio_de('Convocatoria 2025-2026 Enfermería') == 2026 and F.anio_de('EIR_2019_cuaderno.pdf') == 2019 and F.anio_de('conv 2014/15') == 2015)
 check('tipo de documento', F.tipo_de('Cuaderno de examen') == 'cuaderno' and F.tipo_de('Plantilla de respuestas correctas') == 'plantilla' and F.tipo_de('Cuaderno de imágenes') == 'imagenes')

@@ -27,6 +27,9 @@ RUIDO = re.compile(r'^\s*(-\s*\d+\s*-|\d+\s*/\s*\d+|p[aá]gina\s+\d+.*|versi[oó
 NUM = re.compile(r'^\s*(\d{1,3})\s*[.)]\s*(.*)$')
 
 
+SIN_PUNTO = re.compile(r'^\s*(\d{1,3})\s+([A-ZÁÉÍÓÚÑ¿].*)$')   # número de pregunta sin punto: solo si es justo la siguiente
+
+
 def limpia_lineas(texto):
     return [l.rstrip() for l in texto.replace('\r', '').split('\n') if l.strip() and not RUIDO.match(l)]
 
@@ -37,6 +40,9 @@ def parse_cuaderno(texto, nopt):
     qs, cur, campo = [], None, None
     for l in limpia_lineas(texto):
         m = NUM.match(l)
+        if not m and cur is not None and len(cur['opciones']) == nopt:   # errata del PDF: «165 La terapia…» sin punto
+            m2 = SIN_PUNTO.match(l)
+            if m2 and int(m2.group(1)) == cur['n'] + 1: m = m2
         if m:
             n, resto = int(m.group(1)), m.group(2).strip()
             sig_q = (qs[-1]['n'] + 1 if qs else 1) if cur is None else cur['n'] + 1
