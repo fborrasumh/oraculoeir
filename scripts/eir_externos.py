@@ -5,7 +5,7 @@ Para cada año prueba las URL en orden y se queda con la primera que pasa las co
   · cuaderno: es un PDF, su texto menciona ENFERMERÍA y se extraen al menos el 90 % de las preguntas esperadas para ese año;
   · plantilla: PDF o página web cuyas respuestas cubren al menos el 90 % de las preguntas extraídas.
 Lo que no pasa se descarta y se dice en el registro. Cada año guarda su origen en data/raw/<año>/origen.txt."""
-import json, re, sys, html, pathlib, urllib.request, urllib.parse, http.cookiejar, tempfile
+import json, re, sys, html, pathlib, urllib.request, urllib.parse, http.cookiejar, tempfile, unicodedata
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import eir_datos as M
 R = pathlib.Path(__file__).resolve().parent.parent; RAW = R / 'data' / 'raw'
@@ -48,7 +48,8 @@ def carpeta_drive(fid, desfase=1):
     for fid2, nombre in re.findall(r'"([\w-]{25,60})",\["[\w-]+"\],"([^"]{4,120}?\.pdf)"', t):
         m = re.search(r'(20\d\d)', nombre); n = nombre.lower()
         if not m: continue
-        tipo = 'plantilla' if 'respuesta' in n or 'plantilla' in n else 'cuaderno' if 'cuaderno de examen' in n or re.search(r'examen(?!.*imag)', n) and 'imag' not in n else None
+        n = unicodedata.normalize('NFD', n).encode('ascii', 'ignore').decode()   # «imágenes» → «imagenes»
+        tipo = 'imagenes' if 'imag' in n else 'plantilla' if 'respuesta' in n or 'plantilla' in n else 'cuaderno' if 'cuaderno de examen' in n or re.search(r'examen', n) else None
         print(f'  Drive: {nombre} → {fid2} ({tipo or "se ignora"})')
         if tipo:   # el nombre puede llevar el año del examen o el de la convocatoria: se prueba en ambos y el texto del PDF decide
             out.setdefault((int(m.group(1)) + desfase, tipo), []).insert(0, f'https://drive.google.com/uc?export=download&id={fid2}')
@@ -76,6 +77,23 @@ def plantilla_del_anio(tx, y):
     return not ys or bool(ys & {y, y - 1})
 
 
+def imagenes(F):
+    """Cuadernillos de imágenes de los años sin ellos (solo PDF; el año ya viene corregido por el desfase de la carpeta)."""
+    for ys, e in F.items():
+        if not ys.isdigit(): continue
+        d = RAW / ys
+        if not (d / 'cuaderno.pdf').exists() or (d / 'imagenes.pdf').exists(): continue
+        for u in e.get('imagenes', []):
+            try:
+                b = baja(u)
+                if b[:4] != b'%PDF': raise ValueError('no es un PDF')
+                (d / 'imagenes.pdf').write_bytes(b); print(f'{ys} imágenes OK ({len(b) // 1024} KB) ← {u}')
+                o = d / 'origen.txt'
+                if o.exists(): o.write_text(o.read_text(encoding='utf-8').rstrip('\n') + f'\nimagenes: {u}\n', encoding='utf-8')
+                break
+            except Exception as ex: print(f'{ys} imágenes ✕ {u}: {ex}')
+
+
 def main():
     F = json.loads((R / 'data' / 'fuentes_externas.json').read_text(encoding='utf-8'))
     usadas = {l.split(': ', 1)[1].strip() for o in RAW.glob('20*/origen.txt') for l in o.read_text(encoding='utf-8').splitlines() if l.startswith('plantilla: ')}
@@ -85,6 +103,7 @@ def main():
             for (y, tp), us in carpeta_drive(fid, c.get('desfase', 1) if isinstance(c, dict) else 1).items():
                 e = F.setdefault(str(y), {'cuaderno': [], 'plantilla': []}); e[tp] = us + e.get(tp, [])
         except Exception as ex: print('  Drive: error al leer la carpeta', fid, ex)
+    if '--imagenes' in sys.argv: return imagenes(F)
     resumen = []
     for ys, e in F.items():
         if not ys.isdigit(): continue

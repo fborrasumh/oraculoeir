@@ -78,6 +78,8 @@ q_pie = M.parse_cuaderno('1. Pregunta:\n1. a\n2. b\n3. c\n4. Grave.\n)63/43--0-A
 check('pies de página del EIR 2024 no se cuelan', q_pie[0]['opciones'][3] == 'Grave.', q_pie[0]['opciones'][3])
 import eir_externos as X
 check('portada: «225 preguntas más 10 de reserva» → 235', X.anunciadas('integrado por 225 preguntas\nmás 10 de reserva, lleva') == 235 and X.anunciadas('se compone de 175 preguntas más 10 de reserva') == 185)
+qi = M.parse_cuaderno('1. Pregunta vinculada a la imagen nº 3. ¿Qué muestra?:\n1. a\n2. b\n3. c\n4. d\n2. El diagnóstico «Trastorno de la imagen corporal» lo presentan:\n1. a\n2. b\n3. c\n4. d\n3. La figura de Florence Nightingale:\n1. a\n2. b\n3. c\n4. d\n', 4)
+check('imagen: solo con número («imagen nº 3»), no «imagen corporal» ni «la figura de»', [q['imagen'] for q in qi] == [True, False, False], str([q['imagen'] for q in qi]))
 import eir_fetch as F
 check('año del examen: convocatoria 2025-2026 → 2026', F.anio_de('Convocatoria 2025-2026 Enfermería') == 2026 and F.anio_de('EIR_2019_cuaderno.pdf') == 2019 and F.anio_de('conv 2014/15') == 2015)
 check('tipo de documento', F.tipo_de('Cuaderno de examen') == 'cuaderno' and F.tipo_de('Plantilla de respuestas correctas') == 'plantilla' and F.tipo_de('Cuaderno de imágenes') == 'imagenes')

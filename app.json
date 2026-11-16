@@ -35,6 +35,11 @@
       "name": "Fernando Borrás Rocher",
       "orcid": "0000-0002-5519-4573",
       "affiliation": "Universidad Miguel Hernández de Elche"
+    },
+    {
+      "name": "Concepción Carratalá-Munuera",
+      "orcid": "0000-0002-1303-6294",
+      "affiliation": "Universidad Miguel Hernández de Elche"
     }
   ],
   "idea_credit": "Basada en OráculoMIR, adaptada al examen EIR.",
@@ -64,5 +69,13 @@
     "nucleo.js",
     "datos.js",
     "app.js"
-  ]
+  ],
+  "img_extra": [
+    "'self'"
+  ],
+  "csp_extra": [
+    "manifest-src 'self'",
+    "worker-src 'self'"
+  ],
+  "head_extra": "<link rel=\"manifest\" href=\"manifest.webmanifest\"><link rel=\"apple-touch-icon\" href=\"icons/icon-192.png\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\">"
 }

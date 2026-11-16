@@ -84,7 +84,7 @@ function reparto(filas, n) {
   [...base].sort((a, b) => b.r - a.r).forEach(b => { if (falta > 0) { b.k++; falta--; } });
   return Object.fromEntries(base.map(b => [b.id, b.k]));
 }
-const utilizable = q => q && q.correcta && !q.anulada && !q.imagen && Array.isArray(q.opciones) && q.opciones.length >= 4;
+const utilizable = q => q && q.correcta && !q.anulada && (!q.imagen || !!q.img) && Array.isArray(q.opciones) && q.opciones.length >= 4;   // con imagen, solo si la tenemos
 
 /* Simulacro «probable 2027»: n preguntas oficiales, en la proporción que predice el modelo; reproducible con la semilla */
 function simulacro(preguntas, filas, n, semilla, soloAsig) {
@@ -162,13 +162,92 @@ function temasRecurrentes(preguntas, asig, kws, anioRef, {top = 15, hueco = 4} =
 }
 /* ejemplos oficiales para el redactor: los más recientes primero (con respuesta), sin imagen ni anuladas */
 function ejemplosRecientes(preguntas, asig, n, r) {
-  const ok = preguntas.filter(q => q.asig === asig && utilizable(q)).sort((a, b) => b.anio - a.anio);
+  const ok = preguntas.filter(q => q.asig === asig && utilizable(q) && !q.imagen).sort((a, b) => b.anio - a.anio);   // el redactor no ve imágenes
   const recientes = ok.filter(q => q.anio >= (ok[0] || {anio: 0}).anio - 4);
   return baraja(recientes.length >= n ? recientes : ok, r).slice(0, n);
+}
+
+/* ── historial personal, repaso espaciado (Leitner) y plan ──
+   Cada pregunta respondida guarda {v: vistas, ok, ko, caja 0-5, prox: fecha AAAA-MM-DD del próximo repaso, ult}.
+   Fallo → caja 0 y vuelve mañana. Acierto en un repaso → sube de caja: 1, 3, 7, 21 y 60 días. Caja 5 = dominada (sale del repaso). */
+const INTERVALOS = [1, 3, 7, 21, 60];
+const sumaDias = (f, d) => new Date(Date.parse(f + 'T12:00:00Z') + d * 864e5).toISOString().slice(0, 10);
+function registra(h, acierto, hoy) {
+  const e = {v: 0, ok: 0, ko: 0, caja: null, prox: null, ...(h || {})}; e.v++; e.ult = hoy;
+  if (acierto) {
+    e.ok++;
+    if (e.caja !== null) { e.caja = Math.min(5, e.caja + 1); e.prox = e.caja >= 5 ? null : sumaDias(hoy, INTERVALOS[e.caja - 1]); }
+  } else { e.ko++; e.caja = 0; e.prox = sumaDias(hoy, INTERVALOS[0]); }
+  return e;
+}
+const pendientes = (hist, hoy) => Object.entries(hist || {}).filter(([, e]) => e.prox && e.prox <= hoy).sort((a, b) => a[1].prox.localeCompare(b[1].prox) || a[1].caja - b[1].caja).map(([id]) => id);
+const enRepaso = hist => Object.values(hist || {}).filter(e => e.prox).length;
+/* plan: por asignatura, preguntas esperadas en 2027 × tu tasa de fallo = preguntas que hoy probablemente fallarías.
+   Con menos de «minimo» respuestas no hay dato fiable: se marca «sin datos» y se pide practicar. */
+function plan(hist, preguntas, filas, minimo = 8) {
+  const porId = Object.fromEntries(preguntas.map(q => [q.id, q])), ag = {};
+  for (const [id, e] of Object.entries(hist || {})) { const q = porId[id]; if (!q) continue; const a = (ag[q.asig] = ag[q.asig] || {v: 0, ok: 0, ko: 0}); a.ok += e.ok; a.ko += e.ko; a.v += e.ok + e.ko; }
+  return filas.map(f => {
+    const a = ag[f.id] || {v: 0, ok: 0, ko: 0}, tasa = a.v ? a.ko / a.v : null, datos = a.v >= minimo;
+    return {id: f.id, esperadas: f.n, respondidas: a.v, aciertos: a.ok, fallos: a.ko, tasa, datos, enJuego: datos ? f.n * tasa : null};
+  }).sort((x, y) => (y.datos - x.datos) || ((y.enJuego ?? 0) - (x.enJuego ?? 0)) || (y.esperadas - x.esperadas));
+}
+/* búsqueda en el banco: todas las palabras (sin tildes) deben aparecer en enunciado u opciones */
+function busca(preguntas, texto, {asig, anio, solo} = {}) {
+  const ws = sinTildes(texto).trim().split(/\s+/).filter(w => w.length > 1);
+  return preguntas.filter(q => (!asig || q.asig === asig) && (!anio || q.anio === +anio) && (!solo || utilizable(q)) &&
+    (!ws.length || (t => ws.every(w => t.includes(' ' + w) || t.includes(w)))(sinTildes(q.enunciado + ' ' + (q.opciones || []).join(' ')))));
+}
+/* enlace para avisar de un error en una pregunta: incidencia de GitHub ya rellenada (nada se envía sin que la persona lo confirme en GitHub) */
+function urlAviso(repo, q, comentario = '') {
+  const t = `Error en EIR ${q.anio} · pregunta ${q.n} (${q.id})`;
+  const b = `**Pregunta:** ${q.id} (EIR ${q.anio}, nº ${q.n}, asignatura asignada: ${q.asig})\n**Respuesta que muestra la app:** ${q.correcta ?? '—'}\n\n> ${String(q.enunciado).slice(0, 600)}\n\n**Qué está mal:** ${comentario || '(describe el error: texto, opciones, respuesta, imagen o asignatura)'}\n`;
+  return `https://github.com/${repo}/issues/new?labels=error-pregunta&title=${encodeURIComponent(t)}&body=${encodeURIComponent(b)}`;
+}
+
+/* ── panel de revisión (inspirado en el panel de DiagnostIA): estilo por código + veredicto combinado ── */
+const ABSOLUTOS = /\b(siempre|nunca|jam[aá]s|todos|todas|ninguno|ninguna|exclusivamente|únicamente|unicamente|en ningún caso)\b/i;
+/* fallos de redacción detectables sin IA (normas habituales de redacción de preguntas de examen médico) */
+function revisaEstilo(g) {
+  const avisos = [], ops = (g.opciones || []).map(o => String(o)), k = Number(g.correcta) - 1;
+  if (ops.length === 4 && k >= 0 && k < 4) {
+    const L = ops.map(o => o.length), otras = L.filter((_, i) => i !== k), media = otras.reduce((a, b) => a + b, 0) / otras.length;
+    if (L[k] > 1.5 * media && L[k] === Math.max(...L) && L[k] - Math.max(...otras) > 15) avisos.push('la correcta es mucho más larga que las demás');
+    const absD = ops.filter((o, i) => i !== k && ABSOLUTOS.test(o)).length;
+    if (absD >= 2 && !ABSOLUTOS.test(ops[k])) avisos.push('solo los distractores usan absolutos («siempre», «nunca»…)');
+  }
+  return avisos;
+}
+/* veredicto del panel:
+   · descartada: ningún resolutor elige la clave, o el Contradictor o la Lista de control la declaran «mala»;
+   · dudosa: un resolutor discrepa, o el Contradictor la ve «dudosa», o la Lista pide «corregir», o hay avisos de estilo;
+   · aceptada: todo lo demás (los resolutores a ciegas coinciden con la clave y nadie encuentra un problema). */
+function veredictoPanel(clave, respuestas, {contra, lista, estilo = []} = {}) {
+  const ok = respuestas.filter(x => x === clave).length;
+  if (ok === 0) return 'descartada';
+  if (contra && contra.veredicto === 'mala') return 'descartada';   // la Lista de control no descarta: con preguntas oficiales marcaba «mala» el 14 % de las buenas
+  if (ok < respuestas.length || (contra && contra.veredicto === 'dudosa') || (lista && lista.veredicto !== 'ok') || estilo.length) return 'dudosa';
+  return 'aceptada';
+}
+/* métricas de la medición: con la clave buena, % aceptado (TA); con una clave errónea, % que se cuela (FA) */
+function metricas(filas) {
+  const pct = (xs, f) => xs.length ? xs.filter(f).length / xs.length : null;
+  const conf = {
+    A: (r, v) => r.res.every(x => x === v.clave),
+    B: (r, v) => r.res.every(x => x === v.clave) && v.contra === 'ok',
+    C: (r, v) => veredictoPanel(v.clave, r.res, {contra: {veredicto: v.contra}, lista: {veredicto: v.lista}, estilo: v.estilo}) === 'aceptada',
+    D: (r, v) => veredictoPanel(v.clave, r.res, {contra: {veredicto: v.contra}, lista: {veredicto: v.lista}, estilo: v.estilo}) !== 'descartada'   // aceptada o dudosa (se conserva para revisar)
+  };
+  const out = {n: filas.length};
+  for (const [k, f] of Object.entries(conf)) out[k] = {ta: pct(filas, r => f(r, r.buena)), fa: pct(filas, r => f(r, r.mala))};
+  out.acierto1 = pct(filas, r => r.res[0] === r.buena.clave); out.acierto2 = pct(filas, r => r.res[1] === r.buena.clave);
+  const acuerdo = filas.filter(r => r.res[0] && r.res[0] === r.res[1]);
+  out.acuerdo = filas.length ? acuerdo.length / filas.length : null; out.precisionAcuerdo = pct(acuerdo, r => r.res[0] === r.buena.clave);
+  return out;
 }
 
 /* GIFT (formato de preguntas de Moodle) */
 const giftEsc = s => String(s).replace(/([~=#{}:\\])/g, '\\$1');
 function aGIFT(qs) { return qs.map((q, i) => `::OraculoEIR ${i + 1}::${giftEsc(q.enunciado)} {\n${q.opciones.map((o, k) => `${k + 1 === q.correcta ? '=' : '~'}${giftEsc(o)}`).join('\n')}\n}`).join('\n\n') + '\n'; }
 
-if (typeof module !== 'undefined') module.exports = {N_EIR, FECHA_EIR, rng, baraja, conteos, cuotas, predice, valida, reparto, simulacro, puntua, utilizable, fechaMadrid, numReto, diasHastaEIR, textoCompartirReto, jaccard, revisaFormato, parecidoBanco, permuta, veredicto, aGIFT, temasRecurrentes, ejemplosRecientes};
+if (typeof module !== 'undefined') module.exports = {N_EIR, FECHA_EIR, rng, baraja, conteos, cuotas, predice, valida, reparto, simulacro, puntua, utilizable, fechaMadrid, numReto, diasHastaEIR, textoCompartirReto, jaccard, revisaFormato, parecidoBanco, permuta, veredicto, aGIFT, temasRecurrentes, ejemplosRecientes, registra, pendientes, enRepaso, plan, busca, urlAviso, sumaDias, revisaEstilo, veredictoPanel, metricas};

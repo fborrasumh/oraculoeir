@@ -59,7 +59,7 @@ def parse_cuaderno(texto, nopt):
     for q in qs:
         q['enunciado'] = une(q['enunciado'])
         q['opciones'] = [une(o) for o in q['opciones']]
-        q['imagen'] = bool(re.search(r'\bimagen(es)?\b|\bfigura\b', q['enunciado'], re.I))
+        q['imagen'] = bool(re.search(r'\bimagen(?:es)?\s*(?:n\s*[ºo°.]*\s*)?\d', q['enunciado'], re.I))   # solo «imagen nº 3»: «imagen corporal» o «la figura de Nightingale» no llevan imagen
     return [q for q in qs if len(q['opciones']) == nopt]
 
 
@@ -81,7 +81,7 @@ def mejor_cuaderno(texto):
 
 
 # ── 2 · plantilla ──────────────────────────────────────────────────────────────────────────────
-TOK = re.compile(r'ANULADA|ANUL\.?|\d{1,3}', re.I)   # un guion NO es anulada: «reserva (176 - 185)» lo confundía
+TOK = re.compile(r'ANULADA|ANUL\.?|(?<![\d/])\d{1,3}(?![\d/])', re.I)   # números enteros de 1-3 cifras: «2008» o «07/04» no se trocean   # un guion NO es anulada: «reserva (176 - 185)» lo confundía
 
 
 def _val(tk, nopt):
@@ -195,7 +195,9 @@ def procesa_anio(anio, d):
     inf.update(preguntas=len(qs), opciones=nopt, fuente=fuente)
     if not qs: inf['error'] = 'no se reconocieron preguntas en el cuaderno'; return [], inf
     resp = {}
-    if (d / 'respuestas.json').exists():   # hoja de respuestas de la API del portal: filas {V_0: nº de pregunta en la versión 0, RC_0: respuesta}
+    if (d / 'respuestas_cruce.json').exists():   # 2010 y 2014: cruce por texto con una transcripción de terceros (scripts/eir_plantilla_cruce.py)
+        resp = {int(k): v for k, v in json.loads((d / 'respuestas_cruce.json').read_text(encoding='utf-8')).items()}
+    elif (d / 'respuestas.json').exists():   # hoja de respuestas de la API del portal: filas {V_0: nº de pregunta en la versión 0, RC_0: respuesta}
         resp = parse_respuestas_json(json.loads((d / 'respuestas.json').read_text(encoding='utf-8')))
     elif pl.exists() or (d / 'plantilla.txt').exists():
         tp = (d / 'plantilla.txt').read_text(encoding='utf-8') if (d / 'plantilla.txt').exists() else texto_pdf(pl, columnas=False)
@@ -208,8 +210,12 @@ def procesa_anio(anio, d):
     out = []
     for q in qs:
         r = resp.get(q['n'])
+        img = None
+        if q['imagen']:   # «Pregunta vinculada a la imagen nº 5» → data/img/<año>/5.jpg, si existe
+            mi = re.search(r'imagen(?:es)?\s*(?:n\s*[ºo°.]*\s*)?(\d{1,3})', q['enunciado'], re.I)
+            if mi and (OUT / 'img' / str(anio) / f'{int(mi.group(1))}.jpg').exists(): img = f'data/img/{anio}/{int(mi.group(1))}.jpg'
         out.append({'id': f"{anio}-{q['n']:03d}", 'anio': anio, 'n': q['n'], 'enunciado': q['enunciado'], 'opciones': q['opciones'],
-                    'correcta': r if r else None, 'anulada': r == 0, 'imagen': q['imagen'], 'fuente': fuente})
+                    'correcta': r if r else None, 'anulada': r == 0, 'imagen': q['imagen'], 'fuente': fuente, **({'img': img} if img else {})})
     inf['ok'] = True
     return out, inf
 
@@ -232,12 +238,22 @@ def main():
              'clasificacion': 'IA (data/clasificacion_ia.json) cuando existe; si no, palabras clave (data/asignaturas.json)',
              'asignaturas': [{'id': x['id'], 'nombre': x['nombre']} for x in asigs] + [{'id': 'otras', 'nombre': 'Sin clasificar'}],
              'examenes': informes, 'preguntas': preg}
+    ver = json.loads((OUT / 'verificacion.json').read_text(encoding='utf-8')) if (OUT / 'verificacion.json').exists() else {}
+    for i in informes:
+        v = ver.get(str(i['anio']))
+        if not v or not i.get('ok'): continue
+        mias = sorted(q['n'] for q in preg if q['anio'] == i['anio'] and q['anulada'] and q['n'] <= v.get('hasta', 999))
+        pub = sorted(v['anuladas']); cb = {int(k): c for k, c in v.get('cambios', {}).items()}
+        res = {q['n']: q['correcta'] for q in preg if q['anio'] == i['anio']}
+        cb_ok = all(res.get(k) == c for k, c in cb.items())
+        i['cotejo'] = {'publicadas': pub, 'extraidas': mias, 'coincide': mias == pub and cb_ok, 'cambios_ok': cb_ok, 'n_cambios': len(cb), 'fuente': v['fuente']}
+    datos_cotejo = True
     (OUT / 'eir.json').write_text(json.dumps(datos, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     # informe legible
     L = ['# Informe de extracción · OráculoEIR', '', f"Generado: {datos['generado']}", '',
-         '| Año | Preguntas | Opciones | Con respuesta | Anuladas | Huecos | Estado |', '|---|---|---|---|---|---|---|']
+         '| Año | Preguntas | Opciones | Con respuesta | Anuladas | Cotejo con lo publicado | Estado |', '|---|---|---|---|---|---|---|']
     for i in informes:
-        L.append(f"| {i['anio']}{' (copia)' if i.get('fuente') == 'tercero' else ''} | {i.get('preguntas', 0)} | {i.get('opciones', '')} | {i.get('con_respuesta', 0)} | {i.get('anuladas', 0)} | {len(i.get('huecos', []))} | {'✓' if i['ok'] else '✕ ' + i.get('error', '')} |")
+        L.append(f"| {i['anio']}{' (copia)' if i.get('fuente') == 'tercero' else ''} | {i.get('preguntas', 0)} | {i.get('opciones', '')} | {i.get('con_respuesta', 0)} | {i.get('anuladas', 0)} | {(('✓ anuladas' + (f" y {i['cotejo']['n_cambios']} cambios" if i['cotejo']['n_cambios'] else '')) if i['cotejo']['coincide'] else '✕ publicadas ' + str(i['cotejo']['publicadas']) + ' · extraídas ' + str(i['cotejo']['extraidas']) + ('' if i['cotejo']['cambios_ok'] else ' · cambios NO')) if i.get('cotejo') else '—'} | {'✓' if i['ok'] else '✕ ' + i.get('error', '')} |")
     sc = sum(1 for q in preg if q['asig'] == 'otras')
     nia = sum(1 for q in preg if q.get('metodo') == 'ia')
     L += ['', f'Preguntas totales: {len(preg)} · clasificadas con IA: {nia} · sin clasificar: {sc} ({(sc / max(1, len(preg))):.0%})', '',
