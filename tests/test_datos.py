@@ -76,6 +76,8 @@ q_sp = M.parse_cuaderno('1. Primera pregunta:\n1. a\n2. b\n3. c\n4. d\n2 La segu
 check('errata: número de pregunta sin punto («165 La…»)', [q['n'] for q in q_sp] == [1, 2, 3] and q_sp[1]['enunciado'].startswith('La segunda'), str([q['n'] for q in q_sp]))
 q_pie = M.parse_cuaderno('1. Pregunta:\n1. a\n2. b\n3. c\n4. Grave.\n)63/43--0-AÍREMREFNE--(\n32 de 34\nPagina: 33 de 34\n2. Otra:\n1. a\n2. b\n3. c\n4. d\n', 4)
 check('pies de página del EIR 2024 no se cuelan', q_pie[0]['opciones'][3] == 'Grave.', q_pie[0]['opciones'][3])
+import eir_externos as X
+check('portada: «225 preguntas más 10 de reserva» → 235', X.anunciadas('integrado por 225 preguntas\nmás 10 de reserva, lleva') == 235 and X.anunciadas('se compone de 175 preguntas más 10 de reserva') == 185)
 import eir_fetch as F
 check('año del examen: convocatoria 2025-2026 → 2026', F.anio_de('Convocatoria 2025-2026 Enfermería') == 2026 and F.anio_de('EIR_2019_cuaderno.pdf') == 2019 and F.anio_de('conv 2014/15') == 2015)
 check('tipo de documento', F.tipo_de('Cuaderno de examen') == 'cuaderno' and F.tipo_de('Plantilla de respuestas correctas') == 'plantilla' and F.tipo_de('Cuaderno de imágenes') == 'imagenes')

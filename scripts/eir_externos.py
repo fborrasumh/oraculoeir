@@ -9,7 +9,7 @@ import json, re, sys, html, pathlib, urllib.request, urllib.parse, http.cookieja
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import eir_datos as M
 R = pathlib.Path(__file__).resolve().parent.parent; RAW = R / 'data' / 'raw'
-ESPERADAS = lambda y: 260 if y <= 2009 else 235 if y <= 2019 else 185 if y <= 2021 else 210   # incluidas las de reserva
+ESPERADAS = lambda y: 235 if y <= 2019 else 185 if y <= 2021 else 210   # incluidas las de reserva; si la portada lo dice, manda la portada (anunciadas)
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'}
 cj = http.cookiejar.CookieJar(); OP = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 
@@ -56,6 +56,12 @@ def carpeta_drive(fid, desfase=1):
     return out
 
 
+def anunciadas(tx):
+    """Preguntas que anuncia la portada del cuaderno, reserva incluida: «225 preguntas más 10 de reserva» → 235."""
+    m = re.search(r'(\d{2,3})\s+preguntas\s+m[aá]s\s+(\d{1,2})\s+de\s+reserva', tx, re.I)
+    return int(m.group(1)) + int(m.group(2)) if m else None
+
+
 def anio_examen(tx):
     """Año del EXAMEN según el propio cuaderno: «PRUEBAS SELECTIVAS 2012» se examinó en enero de 2013."""
     m = re.search(r'PRUEBAS\s+SELECTIVAS\s+(20\d\d)', tx, re.I)
@@ -87,15 +93,15 @@ def main():
         qs = None; origen = []
         if (d / 'cuaderno.txt').exists():
             qs, nopt = M.mejor_cuaderno((d / 'cuaderno.txt').read_text(encoding='utf-8'))
-        for u in ([] if qs and len(qs) >= 0.9 * ESPERADAS(y) else e.get('cuaderno', [])):
+        for u in ([] if qs and len(qs) >= 0.9 * (anunciadas((d / 'cuaderno.txt').read_text(encoding='utf-8')) or ESPERADAS(y)) else e.get('cuaderno', [])):
             try:
                 b = baja(u); tx, tipo = texto_de(b, u)
                 if tipo != 'pdf': raise ValueError('no es un PDF')
                 if not re.search(r'enfermer[ií]a', tx, re.I): raise ValueError('no menciona ENFERMERÍA')
                 ya = anio_examen(tx)
                 if ya and ya != y: raise ValueError(f'el propio cuaderno dice que es del EIR {ya}')
-                q2, nopt = M.mejor_cuaderno(tx)
-                if len(q2) < 0.9 * ESPERADAS(y): raise ValueError(f'solo {len(q2)} preguntas de {ESPERADAS(y)}')
+                q2, nopt = M.mejor_cuaderno(tx); esp = anunciadas(tx) or ESPERADAS(y)
+                if len(q2) < 0.9 * esp: raise ValueError(f'solo {len(q2)} preguntas de {esp}')
                 d.mkdir(parents=True, exist_ok=True); (d / 'cuaderno.pdf').write_bytes(b); (d / 'cuaderno.txt').write_text(tx, encoding='utf-8'); qs = q2
                 origen.append('cuaderno: ' + u); print(f'{y} cuaderno OK ({len(q2)} preg., {nopt} opciones) ← {u}'); break
             except Exception as ex: print(f'{y} cuaderno ✕ {u}: {ex}')

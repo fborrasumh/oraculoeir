@@ -1,3 +1,110 @@
 {
- "_nota": "Copias de terceros de cuadernos (versión 0) y plantillas definitivas oficiales del EIR para los años que el portal FSE ya no ofrece. Formato: {\"AAAA\": {\"cuaderno\": [url, …], \"plantilla\": [url, …]}}. Se prueban las URL en orden; el código comprueba que sea un PDF de Enfermería de ese año y que salgan las preguntas esperadas. Vacío de momento: solo se usan los exámenes del portal oficial."
+ "_nota": "Copias de terceros de los cuadernos (versión 0) y plantillas definitivas oficiales del EIR para los años que el portal FSE ya no ofrece. Clave = año del EXAMEN (la convocatoria 2018/19 se examinó en enero de 2019). Se prueban las URL en orden; el código comprueba que sea un PDF de Enfermería de ese año («PRUEBAS SELECTIVAS» + 1) y que salgan las preguntas que anuncia su portada. Fuentes: Colegio de Enfermería de Salamanca (enfermeriasalamanca.com/examenes-eir), IFSES, SATSE, Consalud, CSIF.",
+ "2009": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2008.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2008.pdf"
+  ]
+ },
+ "2010": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2009.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2009.pdf"
+  ]
+ },
+ "2011": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2010.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2010.pdf"
+  ]
+ },
+ "2012": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2011.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2011.pdf"
+  ]
+ },
+ "2013": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2012.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2012.pdf"
+  ]
+ },
+ "2014": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2013.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2013.pdf"
+  ]
+ },
+ "2015": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2014.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2014.pdf"
+  ]
+ },
+ "2016": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2015.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2015.pdf"
+  ]
+ },
+ "2017": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2016.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2016.pdf"
+  ]
+ },
+ "2018": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2017.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2017.pdf"
+  ]
+ },
+ "2019": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2018.pdf",
+   "https://foro.ifses.es/files/EXAMEN_EIR_2018_Version_0.pdf",
+   "https://www.satse.es/documents/37411/4700104/preguntas_del_examen_eir_2018_2019_TWZKrN.pdf/cdf41f19-28fa-2f63-fdd1-f799856c4766?t=1691097023750"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2018.pdf"
+  ]
+ },
+ "2020": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/examen2019.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2020/05/respuestas2019.pdf"
+  ]
+ },
+ "2021": {
+  "cuaderno": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2021/03/examen2020.pdf",
+   "https://consalud.es/uploads/s1/15/58/90/0/cuaderno-2020-enfermeria-0-c.pdf"
+  ],
+  "plantilla": [
+   "https://enfermeriasalamanca.com/wp-content/uploads/2021/04/respuestas2020.pdf"
+  ]
+ }
 }
