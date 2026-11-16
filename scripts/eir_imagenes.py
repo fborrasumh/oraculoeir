@@ -24,9 +24,9 @@ def imagenes_de(pdf):
     with pdfplumber.open(pdf) as p:
         for ip, pg in enumerate(p.pages):
             ws = pg.extract_words(); mid = pg.width / 2
-            rot = [(int(ws[i + 1]['text']), ws[i]) for i in range(len(ws) - 1) if ws[i]['text'].lower() == 'imagen' and ws[i + 1]['text'].isdigit()]
+            rot = [(int(ws[i + 1]['text'].rstrip(':.')), ws[i]) for i in range(len(ws) - 1) if ws[i]['text'].lower() == 'imagen' and ws[i + 1]['text'].rstrip(':.').isdigit()]   # «IMAGEN 1» o «IMAGEN 1:»
             pags = [(int(w['text']), w) for w in ws if w['text'].isdigit() and w['top'] > pg.height * 0.9]
-            ims = [i for i in pg.images if (i['x1'] - i['x0']) > 80 and (i['bottom'] - i['top']) > 60 and (i['x1'] - i['x0']) < pg.width * 0.95]
+            ims = [i for i in pg.images if (i['x1'] - i['x0']) > 80 and (i['bottom'] - i['top']) > 40 and (i['x1'] - i['x0']) < pg.width * 0.95]
             for im in ims:
                 bb = (im['x0'], im['top'], im['x1'], im['bottom']); lado = bb[0] >= mid - 20
                 enc = [(im['top'] - w['bottom'], n) for n, w in rot if w['bottom'] <= im['top'] + 15 and ((w['x0'] >= mid - 20) == lado) and im['top'] - w['bottom'] < 120]
@@ -67,7 +67,16 @@ def main():
         if dst.exists(): shutil.rmtree(dst)
         try: items, modo = imagenes_de(pdf)
         except Exception as e: print(f'{anio}: ✕ no se pudo leer ({e})'); continue
-        nums = [n for n, _, _ in items]; mx = maximo_citado(anio)
+        mx = maximo_citado(anio)
+        if modo == 'rotulos':   # un rótulo imposible (fuera de 1..mx) se descarta solo él, no el año
+            fuera = [n for n, _, _ in items if not 1 <= n <= mx]
+            dentro = [x for x in items if 1 <= x[0] <= mx]; faltan = sorted(set(range(1, mx + 1)) - {x[0] for x in dentro})
+            if len(fuera) == 1 and len(faltan) == 1:   # errata del cuadernillo (EIR 2022: «IMAGEN 9999999» es la 9)
+                print(f'{anio}: rótulo imposible {fuera[0]} → imagen {faltan[0]}, la única que falta')
+                dentro += [(faltan[0], ip, bb) for n, ip, bb in items if n == fuera[0]]
+            elif fuera: print(f'{anio}: rótulos fuera de rango ignorados: {fuera}')
+            items = dentro
+        nums = [n for n, _, _ in items]
         # con rótulos la asignación es fiable: se aceptan aunque falte alguna; por orden, solo si cuadra el total exacto
         if modo == 'orden':   # sin rótulos de texto: el número debe leerse DENTRO de cada imagen; el orden de lectura no basta (falló en 2014)
             doc = pdfium.PdfDocument(str(pdf)); leidos = [(rotulo_interno(render(doc, ip, bb)), ip, bb) for _, ip, bb in items]
