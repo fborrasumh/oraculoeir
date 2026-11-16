@@ -1,9 +1,13 @@
 # Informe de extracción · OráculoEIR
 
-Generado: 2026-11-16T15:20:40+00:00
+Generado: 2026-11-16T15:24:26+00:00
 
 | Año | Preguntas | Opciones | Con respuesta | Anuladas | Huecos | Estado |
 |---|---|---|---|---|---|---|
+| 2009 (copia) | 108 | 5 | 102 | 6 | 0 | ✓ |
+| 2010 (copia) | 110 | 5 | 104 | 6 | 0 | ✓ |
+| 2011 (copia) | 110 | 5 | 103 | 7 | 0 | ✓ |
+| 2012 (copia) | 110 | 5 | 104 | 6 | 0 | ✓ |
 | 2013 (copia) | 170 | 5 | 160 | 9 | 0 | ✓ |
 | 2014 (copia) | 190 | 5 | 181 | 9 | 0 | ✓ |
 | 2015 (copia) | 210 | 5 | 203 | 7 | 0 | ✓ |
@@ -19,6 +23,6 @@ Generado: 2026-11-16T15:20:40+00:00
 | 2025 | 210 | 4 | 209 | 1 | 0 | ✓ |
 | 2026 | 210 | 4 | 207 | 3 | 0 | ✓ |
 
-Preguntas totales: 2929 · clasificadas con IA: 2929 · sin clasificar: 0 (0%)
+Preguntas totales: 3367 · clasificadas con IA: 3367 · sin clasificar: 0 (0%)
 
 Revisa a mano al menos 20 preguntas por año contra el PDF antes de fiarte de los datos.
