@@ -1,6 +1,6 @@
 # Informe de extracción · OráculoEIR
 
-Generado: 2026-11-16T19:12:17+00:00
+Generado: 2026-11-16T19:14:58+00:00
 
 | Año | Preguntas | Opciones | Con respuesta | Anuladas | Cotejo con lo publicado | Estado |
 |---|---|---|---|---|---|---|
